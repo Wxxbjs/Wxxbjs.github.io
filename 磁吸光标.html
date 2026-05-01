@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Wxxbjs的个人主页</title>
+    <link rel="stylesheet" href="StandardLayout.css">
+    <style>
+        html {
+            background: #333;
+        }
+
+        html,
+        html * {
+            cursor: none;
+        }
+
+        .cursor-transition {
+            transition: translate 0.1s ease-out,
+                left 0.15s ease-out,
+                top 0.15s ease-out,
+                width 0.15s ease-out,
+                height 0.15s ease-out;
+        }
+
+        #cursor {
+            --color: #fff;
+            --width: 2.5rem;
+            --height: 2.5rem;
+            --_len: 0.675rem;
+            --border-size: 0.675rem;
+            --border-width: 0.2rem;
+            position: fixed;
+            left: calc(var(--width) / -2);
+            top: calc(var(--height) / -2);
+            width: var(--width);
+            height: var(--height);
+        }
+
+        #cursor,
+        #cursor * {
+            pointer-events: none;
+        }
+
+        #cursor>div:not(#cursor>div:nth-child(5)) {
+            position: absolute;
+            width: var(--border-size);
+            height: var(--border-size);
+            border-width: var(--border-width);
+            border-color: var(--color);
+        }
+
+        #cursor>div:nth-child(1) {
+            top: 0;
+            left: 0;
+            border-top-style: solid;
+            border-left-style: solid;
+        }
+
+        #cursor>div:nth-child(2) {
+            top: 0;
+            right: 0;
+            border-top-style: solid;
+            border-right-style: solid;
+        }
+
+        #cursor>div:nth-child(3) {
+            bottom: 0;
+            right: 0;
+            border-bottom-style: solid;
+            border-right-style: solid;
+        }
+
+        #cursor>div:nth-child(4) {
+            bottom: 0;
+            left: 0;
+            border-bottom-style: solid;
+            border-left-style: solid;
+        }
+
+        #cursor>div:nth-child(5) {
+            position: absolute;
+            top: calc((var(--height) - var(--_len)) / 2);
+            left: calc((var(--width) - var(--_len)) / 2);
+            width: var(--_len);
+            height: var(--_len);
+            background-color: var(--color);
+            border-radius: 50%;
+        }
+
+        .Adsorption {}
+
+        .center {
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cursor" class="cursor-transition">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div class="cursor-transition"></div>
+    </div>
+
+    <div class="Adsorption center"
+        style="width:100px;height:75px;background:#eee;color:#222;font-size:1.5rem;margin-top:100px;">TEXT</div>
+    <div class="Adsorption center"
+        style="width:200px;height:100px;background:#222;color:#eee;font-size:2rem;margin-top:20px;">TEXT</div>
+    <button class="Adsorption center"
+        style="width:125px;height:75px;background:#999999;color:#222;font-size:1.75rem;margin-top:20px;">TEXT</button>
+
+    <script>
+        const pointer = {
+            element: document.querySelector("#cursor"),
+            lastX: 0, lastY: 0,
+            targetX: 0, targetY: 0,
+            cursorX: 0, cursorY: 0,
+            ss: 1 - 0.318, L: 4,
+            EventTarget: null,
+            rafId: null,
+            init() {
+                window.addEventListener("mousemove", this.move.bind(this));
+                this.bind_adsorption_events();
+                this.loop();
+            },
+            loop() {
+                //核心吸附逻辑，将目标和当前分离，用loop循环实现迭代
+                this.lastX += (this.targetX - this.lastX) / this.L;
+                this.lastY += (this.targetY - this.lastY) / this.L;
+                this.element.style.transform = `translate(${this.lastX}px, ${this.lastY}px)`;
+                this.rafId = requestAnimationFrame(() => this.loop());
+            },
+            move(e) {
+                if (this.EventTarget) {
+                    const rect = this.EventTarget.getBoundingClientRect();
+                    //目标设置
+                    this.targetX = rect.left + rect.width / 2;
+                    this.targetY = rect.top + rect.height / 2;
+                    //计算 Δs，叠加到当前坐标上
+                    this.lastX += this.ss * (e.clientX - this.cursorX);
+                    this.lastY += this.ss * (e.clientY - this.cursorY);
+                }
+                else {
+                    //目标设置
+                    this.targetX = e.clientX;
+                    this.targetY = e.clientY;
+                }
+                //鼠标位置记录
+                this.cursorX = e.clientX;
+                this.cursorY = e.clientY;
+            },
+            bind_adsorption_events() {
+                [...document.querySelectorAll(".Adsorption")].forEach(ele => {
+                    ele.addEventListener("mouseenter", () => {
+                        this.EventTarget = ele;
+                        const rect = ele.getBoundingClientRect();
+                        this.element.style.setProperty("--width", `${rect.width + 14}px`);
+                        this.element.style.setProperty("--height", `${rect.height + 14}px`);
+                    });
+
+                    ele.addEventListener("mouseleave", () => {
+                        this.EventTarget = null;
+                        this.element.style.setProperty("--width", `2.5rem`);
+                        this.element.style.setProperty("--height", `2.5rem`);
+                    });
+                })
+            }
+        }
+
+        pointer.init();
+
+    </script>
+</body>
+
+</html>

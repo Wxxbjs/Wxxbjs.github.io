@@ -1,0 +1,25 @@
+/* 标准盒子布局 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 隐藏滚动条 */
+*::-webkit-scrollbar {
+    display: none;
+}
+
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+button {
+    border: none;
+}
+
+/* 去掉下划线 */
+a {
+    text-decoration: none;
+}
