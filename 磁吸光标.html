@@ -4,11 +4,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Wxxbjs的个人主页</title>
+    <title>磁吸光标</title>
     <link rel="stylesheet" href="StandardLayout.css">
     <style>
         html {
-            background: #333;
+            background: #111;
         }
 
         html,
@@ -16,12 +16,8 @@
             cursor: none;
         }
 
-        .cursor-transition {
-            transition: translate 0.1s ease-out,
-                left 0.15s ease-out,
-                top 0.15s ease-out,
-                width 0.15s ease-out,
-                height 0.15s ease-out;
+        body {
+            margin-bottom: 100px;
         }
 
         #cursor {
@@ -36,6 +32,7 @@
             top: calc(var(--height) / -2);
             width: var(--width);
             height: var(--height);
+            mix-blend-mode: difference;
         }
 
         #cursor,
@@ -43,7 +40,17 @@
             pointer-events: none;
         }
 
-        #cursor>div:not(#cursor>div:nth-child(5)) {
+        #cursor,
+        #cursor-point {
+            transition:
+                translate 0.15s ease-out,
+                left 0.15s ease-out,
+                top 0.15s ease-out,
+                width 0.15s ease-out,
+                height 0.15s ease-out;
+        }
+
+        #cursor-rotator>div {
             position: absolute;
             width: var(--border-size);
             height: var(--border-size);
@@ -51,35 +58,35 @@
             border-color: var(--color);
         }
 
-        #cursor>div:nth-child(1) {
+        #cursor-rotator>div:nth-child(1) {
             top: 0;
             left: 0;
             border-top-style: solid;
             border-left-style: solid;
         }
 
-        #cursor>div:nth-child(2) {
+        #cursor-rotator>div:nth-child(2) {
             top: 0;
             right: 0;
             border-top-style: solid;
             border-right-style: solid;
         }
 
-        #cursor>div:nth-child(3) {
+        #cursor-rotator>div:nth-child(3) {
             bottom: 0;
             right: 0;
             border-bottom-style: solid;
             border-right-style: solid;
         }
 
-        #cursor>div:nth-child(4) {
+        #cursor-rotator>div:nth-child(4) {
             bottom: 0;
             left: 0;
             border-bottom-style: solid;
             border-left-style: solid;
         }
 
-        #cursor>div:nth-child(5) {
+        #cursor-point {
             position: absolute;
             top: calc((var(--height) - var(--_len)) / 2);
             left: calc((var(--width) - var(--_len)) / 2);
@@ -87,6 +94,23 @@
             height: var(--_len);
             background-color: var(--color);
             border-radius: 50%;
+        }
+
+        #cursor-rotator {
+            width: 100%;
+            height: 100%;
+            animation: spin 0.5s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(90deg);
+            }
+        }
+
+        #cursor-rotator.stop {
+            animation: none;
+            /* 停止旋转 */
         }
 
         .Adsorption {}
@@ -101,74 +125,127 @@
 </head>
 
 <body>
-    <div id="cursor" class="cursor-transition">
-        <div></div>
-        <div></div>
-        <div></div>
-        <div></div>
-        <div class="cursor-transition"></div>
+    <div id="cursor">
+        <div id="cursor-rotator">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <div id="cursor-point"></div>
     </div>
 
     <div class="Adsorption center"
         style="width:100px;height:75px;background:#eee;color:#222;font-size:1.5rem;margin-top:100px;">TEXT</div>
-    <div class="Adsorption center"
-        style="width:200px;height:100px;background:#222;color:#eee;font-size:2rem;margin-top:20px;">TEXT</div>
+    <div class="Adsorption center" style="width:200px;height:100px;background:#222;color:#eee;font-size:2rem;margin-top:20px;
+        border-radius: 5px;">TEXT</div>
     <button class="Adsorption center"
         style="width:125px;height:75px;background:#999999;color:#222;font-size:1.75rem;margin-top:20px;">TEXT</button>
+    <div class=""
+        style="width:1000px;height:500px;background:#222;color:#eee;font-size:2rem;margin:0 auto;margin-top:20px;padding:20px;">
+        <button class="Adsorption"
+            style="width:125px;height:75px;background:#333;color:#fff;font-size:1.75rem;margin:10px;">TEXT</button>
+        <button class=""
+            style="width:125px;height:75px;background:#ddd;color:#000;font-size:1.75rem;margin:10px;">TEXT</button>
+        <button class="Adsorption" style="width:125px;height:75px;background:#ddd;color:#000;font-size:1.75rem;margin:10px;
+                   border-radius: 5px;">TEXT</button>
+    </div>
 
     <script>
+
+        //点类。
+        class pos {
+            constructor(x = 0, y = 0) {
+                this.x = x;
+                this.y = y;
+            }
+        }
+
+        //不是猫。是current and target。简称CAT系统。
+        class CAT {
+            constructor(fraction = 1, current = new pos(), target = new pos()) {
+                this.fraction = fraction;
+                this.x = current.x;
+                this.y = current.y;
+                this.target = target;
+            }
+            StepTnterpolation() {
+                this.x += (this.target.x - this.x) / this.fraction;
+                this.y += (this.target.y - this.y) / this.fraction;
+            }
+        }
+
+        //光标对象
         const pointer = {
-            element: document.querySelector("#cursor"),
-            lastX: 0, lastY: 0,
-            targetX: 0, targetY: 0,
-            cursorX: 0, cursorY: 0,
-            ss: 1 - 0.318, L: 4,
+            frameElement: document.querySelector("#cursor"),
+            pointElement: document.querySelector("#cursor-point"),
+            rotateElement: document.querySelector("#cursor-rotator"),
+            suction: 1 - 0.318,
+            frame: new CAT(4),//框的插值系统
+            point: new CAT(4),//点的插值系统
+            cursor: new pos(),//记录鼠标的位置
             EventTarget: null,
             rafId: null,
+            angle: 0,
             init() {
                 window.addEventListener("mousemove", this.move.bind(this));
                 this.bind_adsorption_events();
                 this.loop();
+                this.runRotate();
+            },
+            runRotate() {
+                this.rotateElement.classList.remove("stop");
+            },
+            stopRotate() {
+                this.rotateElement.classList.add("stop");
             },
             loop() {
                 //核心吸附逻辑，将目标和当前分离，用loop循环实现迭代
-                this.lastX += (this.targetX - this.lastX) / this.L;
-                this.lastY += (this.targetY - this.lastY) / this.L;
-                this.element.style.transform = `translate(${this.lastX}px, ${this.lastY}px)`;
+                this.frame.StepTnterpolation();
+                this.point.StepTnterpolation();
+                this.frameElement.style.transform = `translate(${this.frame.x}px, ${this.frame.y}px)`;
+                this.pointElement.style.transform = `translate(${this.point.x - this.frame.x}px, ${this.point.y - this.frame.y}px)`;
                 this.rafId = requestAnimationFrame(() => this.loop());
             },
             move(e) {
+                //核心函数
                 if (this.EventTarget) {
                     const rect = this.EventTarget.getBoundingClientRect();
                     //目标设置
-                    this.targetX = rect.left + rect.width / 2;
-                    this.targetY = rect.top + rect.height / 2;
-                    //计算 Δs，叠加到当前坐标上
-                    this.lastX += this.ss * (e.clientX - this.cursorX);
-                    this.lastY += this.ss * (e.clientY - this.cursorY);
+                    this.frame.target.x = rect.left + rect.width / 2;
+                    this.frame.target.y = rect.top + rect.height / 2;
+                    //关键：计算 Δs，叠加到框的当前坐标上
+                    this.frame.x += this.suction * (e.clientX - this.cursor.x);
+                    this.frame.y += this.suction * (e.clientY - this.cursor.y);
                 }
                 else {
                     //目标设置
-                    this.targetX = e.clientX;
-                    this.targetY = e.clientY;
+                    this.frame.target.x = e.clientX;
+                    this.frame.target.y = e.clientY;
                 }
+                //点的目标设置（永远追随鼠标）
+                this.point.target.x = e.clientX;
+                this.point.target.y = e.clientY;
                 //鼠标位置记录
-                this.cursorX = e.clientX;
-                this.cursorY = e.clientY;
+                this.cursor.x = e.clientX;
+                this.cursor.y = e.clientY;
+
             },
             bind_adsorption_events() {
                 [...document.querySelectorAll(".Adsorption")].forEach(ele => {
                     ele.addEventListener("mouseenter", () => {
+                        this.stopRotate();
                         this.EventTarget = ele;
                         const rect = ele.getBoundingClientRect();
-                        this.element.style.setProperty("--width", `${rect.width + 14}px`);
-                        this.element.style.setProperty("--height", `${rect.height + 14}px`);
+                        this.frameElement.style.setProperty("--width", `${rect.width + 14}px`);
+                        this.frameElement.style.setProperty("--height", `${rect.height + 14}px`);
                     });
 
                     ele.addEventListener("mouseleave", () => {
+                        this.runRotate();
                         this.EventTarget = null;
-                        this.element.style.setProperty("--width", `2.5rem`);
-                        this.element.style.setProperty("--height", `2.5rem`);
+                        this.frameElement.style.setProperty("--width", `2.5rem`);
+                        this.frameElement.style.setProperty("--height", `2.5rem`);
                     });
                 })
             }
