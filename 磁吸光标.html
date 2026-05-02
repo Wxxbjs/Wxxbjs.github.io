@@ -13,7 +13,7 @@
 
         html,
         html * {
-            cursor: none;
+            cursor: none !important;
         }
 
         body {
@@ -37,6 +37,7 @@
 
         #cursor,
         #cursor * {
+            z-index: 2147483647;
             pointer-events: none;
         }
 
@@ -50,7 +51,7 @@
                 height 0.15s ease-out;
         }
 
-        #cursor-rotator>div {
+        #cursor-body>div {
             position: absolute;
             width: var(--border-size);
             height: var(--border-size);
@@ -58,28 +59,28 @@
             border-color: var(--color);
         }
 
-        #cursor-rotator>div:nth-child(1) {
+        #cursor-body>div:nth-child(1) {
             top: 0;
             left: 0;
             border-top-style: solid;
             border-left-style: solid;
         }
 
-        #cursor-rotator>div:nth-child(2) {
+        #cursor-body>div:nth-child(2) {
             top: 0;
             right: 0;
             border-top-style: solid;
             border-right-style: solid;
         }
 
-        #cursor-rotator>div:nth-child(3) {
+        #cursor-body>div:nth-child(3) {
             bottom: 0;
             right: 0;
             border-bottom-style: solid;
             border-right-style: solid;
         }
 
-        #cursor-rotator>div:nth-child(4) {
+        #cursor-body>div:nth-child(4) {
             bottom: 0;
             left: 0;
             border-bottom-style: solid;
@@ -96,9 +97,11 @@
             border-radius: 50%;
         }
 
-        #cursor-rotator {
+        #cursor-body {
             width: 100%;
             height: 100%;
+            transition:
+                animation 0.15s ease-out;
             animation: spin 0.5s linear infinite;
         }
 
@@ -108,9 +111,9 @@
             }
         }
 
-        #cursor-rotator.stop {
-            animation: none;
+        #cursor-body.stop {
             /* 停止旋转 */
+            animation: none;
         }
 
         .Adsorption {}
@@ -126,7 +129,7 @@
 
 <body>
     <div id="cursor">
-        <div id="cursor-rotator">
+        <div id="cursor-body">
             <div></div>
             <div></div>
             <div></div>
@@ -135,19 +138,21 @@
         <div id="cursor-point"></div>
     </div>
 
-    <div class="Adsorption center"
+    <div id="ele1" class="Adsorption center"
         style="width:100px;height:75px;background:#eee;color:#222;font-size:1.5rem;margin-top:100px;">TEXT</div>
-    <div class="Adsorption center" style="width:200px;height:100px;background:#222;color:#eee;font-size:2rem;margin-top:20px;
+    <div id="ele2" class="Adsorption center" style="width:200px;height:100px;background:#222;color:#eee;font-size:2rem;margin-top:20px;
         border-radius: 5px;">TEXT</div>
-    <button class="Adsorption center"
+    <button id="ele3" class="Adsorption center"
         style="width:125px;height:75px;background:#999999;color:#222;font-size:1.75rem;margin-top:20px;">TEXT</button>
     <div class=""
         style="width:1000px;height:500px;background:#222;color:#eee;font-size:2rem;margin:0 auto;margin-top:20px;padding:20px;">
-        <button class="Adsorption"
+        <button id="ele4" class="Adsorption"
             style="width:125px;height:75px;background:#333;color:#fff;font-size:1.75rem;margin:10px;">TEXT</button>
-        <button class=""
+        <button id="ele5" class=""
             style="width:125px;height:75px;background:#ddd;color:#000;font-size:1.75rem;margin:10px;">TEXT</button>
-        <button class="Adsorption" style="width:125px;height:75px;background:#ddd;color:#000;font-size:1.75rem;margin:10px;
+        <button id="ele6" class="Adsorption" style="width:125px;height:75px;background:#ddd;color:#000;font-size:1.75rem;margin:10px;
+                   border-radius: 5px;">TEXT</button>
+        <button id="ele7" class="Adsorption" style="width:125px;height:75px;background:#ff6e6e;color:#000;font-size:1.75rem;margin:10px;
                    border-radius: 5px;">TEXT</button>
     </div>
 
@@ -161,7 +166,7 @@
             }
         }
 
-        //不是猫。是current and target。简称CAT系统。
+        //不是猫。是current and target。简称CAT系统。插值系统。或者纯粹记录当前坐标和新坐标。
         class CAT {
             constructor(fraction = 1, current = new pos(), target = new pos()) {
                 this.fraction = fraction;
@@ -176,31 +181,30 @@
         }
 
         //光标对象
+        //第一次 OOP 。有点紧张。（？）
+        //第二次完全自主的 OOP 。有点好玩。
+        //第三次进行 OOP 。步入佳境。
         const pointer = {
-            frameElement: document.querySelector("#cursor"),
-            pointElement: document.querySelector("#cursor-point"),
-            rotateElement: document.querySelector("#cursor-rotator"),
-            suction: 1 - 0.318,
+            frameElement: document.getElementById("cursor"),
+            pointElement: document.getElementById("cursor-point"),
+            bodyElement: document.getElementById("cursor-body"),
+            suction: 1 - 0.318,//磁吸系数，越小吸力越强
             frame: new CAT(4),//框的插值系统
             point: new CAT(4),//点的插值系统
-            cursor: new pos(),//记录鼠标的位置
-            EventTarget: null,
-            rafId: null,
-            angle: 0,
+            cursor: new CAT(),//记录鼠标的位置系统（不特别利用插值）
+            EventTarget: null,//记录所磁吸的元素（没有就用null占位）
+            rect: null,//元素信息对象
+            rafId: null,//迭帧器
+            rule: ".Adsorption",//磁吸规则（CSS选择器）
+            pd: false,//选中状态系统（false未选中，true选中）
             init() {
                 window.addEventListener("mousemove", this.move.bind(this));
-                this.bind_adsorption_events();
                 this.loop();
                 this.runRotate();
             },
-            runRotate() {
-                this.rotateElement.classList.remove("stop");
-            },
-            stopRotate() {
-                this.rotateElement.classList.add("stop");
-            },
             loop() {
                 //核心吸附逻辑，将目标和当前分离，用loop循环实现迭代
+                this.update();
                 this.frame.StepTnterpolation();
                 this.point.StepTnterpolation();
                 this.frameElement.style.transform = `translate(${this.frame.x}px, ${this.frame.y}px)`;
@@ -208,46 +212,64 @@
                 this.rafId = requestAnimationFrame(() => this.loop());
             },
             move(e) {
+                //解耦，只记录鼠标坐标
+                this.cursor.target.x = e.clientX;
+                this.cursor.target.y = e.clientY;
+            },
+            update() {
                 //核心函数
-                if (this.EventTarget) {
-                    const rect = this.EventTarget.getBoundingClientRect();
-                    //目标设置
-                    this.frame.target.x = rect.left + rect.width / 2;
-                    this.frame.target.y = rect.top + rect.height / 2;
-                    //关键：计算 Δs，叠加到框的当前坐标上
-                    this.frame.x += this.suction * (e.clientX - this.cursor.x);
-                    this.frame.y += this.suction * (e.clientY - this.cursor.y);
+                //事实获取光标当前元素（绕开事件绑定地狱和不可控行为）
+                const currentTarget = document.elementFromPoint(this.cursor.target.x, this.cursor.target.y);
+                //判断元素是否满足磁吸条件
+                if (currentTarget?.matches?.(this.rule)) {
+                    //特别的，元素必须实时更新
+                    //为何一定要冗余赋值呢。
+                    //不同元素同时判断可以吸附就始终会进这个分支，此时不赋值那就是错的。
+                    //而且同一个元素自己的属性可能也会变
+                    //综上，敢避免冗余就等掉吧。（？）
+                    this.stopRotate();
+                    this.EventTarget = currentTarget;
+                    this.rect = this.EventTarget.getBoundingClientRect();
+                    this.frameElement.style.setProperty("--width", `${this.rect.width + 14}px`);
+                    this.frameElement.style.setProperty("--height", `${this.rect.height + 14}px`);
+                    this.pd = true;
+                }
+                //避免冗余配置（因为元素都已经爆炸了。只要状态下降的时候配置一遍就行了。）
+                else if (this.pd) {
+                    this.runRotate();
+                    this.EventTarget = null;
+                    this.frameElement.style.setProperty("--width", `2.5rem`);
+                    this.frameElement.style.setProperty("--height", `2.5rem`);
+                    this.pd = false;
+                }
+                //处理磁吸逻辑
+                if (this.EventTarget && this.EventTarget.style.display !== "none") {
+                    //框的目标设置
+                    this.frame.target.x = this.rect.left + this.rect.width / 2;
+                    this.frame.target.y = this.rect.top + this.rect.height / 2;
+                    //关键：计算 Δs，叠加到框的当前坐标上，从而实现吸附上的拉扯
+                    this.frame.x += this.suction * (this.cursor.target.x - this.cursor.x);
+                    this.frame.y += this.suction * (this.cursor.target.y - this.cursor.y);
                 }
                 else {
-                    //目标设置
-                    this.frame.target.x = e.clientX;
-                    this.frame.target.y = e.clientY;
+                    //解除锁定
+                    this.EventTarget = null;
+                    //框的目标设置
+                    this.frame.target.x = this.cursor.target.x;
+                    this.frame.target.y = this.cursor.target.y;
                 }
                 //点的目标设置（永远追随鼠标）
-                this.point.target.x = e.clientX;
-                this.point.target.y = e.clientY;
-                //鼠标位置记录
-                this.cursor.x = e.clientX;
-                this.cursor.y = e.clientY;
-
+                this.point.target.x = this.cursor.target.x;
+                this.point.target.y = this.cursor.target.y;
+                //更新鼠标位置记录
+                this.cursor.x = this.cursor.target.x;
+                this.cursor.y = this.cursor.target.y;
             },
-            bind_adsorption_events() {
-                [...document.querySelectorAll(".Adsorption")].forEach(ele => {
-                    ele.addEventListener("mouseenter", () => {
-                        this.stopRotate();
-                        this.EventTarget = ele;
-                        const rect = ele.getBoundingClientRect();
-                        this.frameElement.style.setProperty("--width", `${rect.width + 14}px`);
-                        this.frameElement.style.setProperty("--height", `${rect.height + 14}px`);
-                    });
-
-                    ele.addEventListener("mouseleave", () => {
-                        this.runRotate();
-                        this.EventTarget = null;
-                        this.frameElement.style.setProperty("--width", `2.5rem`);
-                        this.frameElement.style.setProperty("--height", `2.5rem`);
-                    });
-                })
+            runRotate() {
+                this.bodyElement.classList.remove("stop");
+            },
+            stopRotate() {
+                this.bodyElement.classList.add("stop");
             }
         }
 
